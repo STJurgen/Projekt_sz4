@@ -151,15 +151,16 @@
     <h1 id="h1pro">PROCOMP</h1>
     <div class="nav-buttons">
       <a class="btn btn-light btn-sm" href="profil.html" role="button">Profil</a>
-        <div class="dropdown">
-          <button class="btn btn-light btn-sm">Nyelv</button>
-          <div class="dropdown-content btn-light btn-sm">
-            <a href="#">Magyar</a>
-            <a href="#">Deutsch</a>
-            <a href="#">English</a>
-          </div>
+      <a id="admin-link" class="btn btn-warning btn-sm" href="admin.html" role="button" style="display: none;">Admin</a>
+      <div class="dropdown">
+        <button class="btn btn-light btn-sm">Nyelv</button>
+        <div class="dropdown-content btn-light btn-sm">
+          <a href="#">Magyar</a>
+          <a href="#">Deutsch</a>
+          <a href="#">English</a>
         </div>
-        <a class="btn btn-light btn-sm" href="#kapcs">Elérhetőség</a >
+      </div>
+      <a class="btn btn-light btn-sm" href="#kapcs">Elérhetőség</a>
     </div>
   </div>
 
@@ -310,4 +311,25 @@
 
 
 </body>
+<script>
+  async function initNavigation() {
+    const adminLink = document.getElementById('admin-link');
+
+    try {
+      const res = await fetch('/api/me', { credentials: 'include' });
+      if (!res.ok) {
+        return;
+      }
+
+      const user = await res.json();
+      if (Number(user.FUNKCIO) === 1) {
+        adminLink.style.display = 'inline-block';
+      }
+    } catch (err) {
+      console.error('Nem sikerült betölteni a profil adatokat:', err);
+    }
+  }
+
+  initNavigation();
+</script>
 </html>

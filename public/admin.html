@@ -48,24 +48,14 @@
     <!-- Bejövő Rendelések -->
     <div class="section">
       <h2>Bejövő Rendelések</h2>
-      <div class="list-group" id="orders">
-        <div class="list-group-item d-flex justify-content-between align-items-center">
-          <span>Rendelés #1</span>
-          <div>
-            <button class="btn btn-success btn-sm" onclick="acceptOrder()">Elfogadás</button>
-            <button class="btn btn-danger btn-sm" onclick="rejectOrder()">Visszautasítás</button>
-          </div>
-        </div>
-      </div>
+      <div class="list-group" id="orders"></div>
     </div>
 
     <!-- Üzenet Küldése -->
     <div class="section">
       <h2>Üzenet Küldése</h2>
-      <select id="user-select" class="form-select mb-3">
-        <option value="user1">Felhasználó 1</option>
-        <option value="user2">Felhasználó 2</option>
-      </select>
+      <select id="user-select" class="form-select mb-3"></select>
+      <input type="text" id="message-subject" class="form-control mb-3" placeholder="Tárgy (opcionális)">
       <textarea id="message" rows="4" class="form-control mb-3" placeholder="Írja be az üzenetet..."></textarea>
       <button class="btn btn-primary w-100" onclick="sendMessage()">Üzenet Küldése</button>
     </div>
@@ -77,6 +67,7 @@
         <input type="text" id="command" class="form-control" placeholder="Írjon be egy parancsot...">
         <button class="btn btn-secondary" onclick="executeCommand()">Futtatás</button>
       </div>
+      <pre id="command-output" class="bg-light border rounded mt-3 p-3" style="min-height: 80px; white-space: pre-wrap;"></pre>
     </div>
 
     <!-- Adatok Exportálása -->
@@ -88,80 +79,423 @@
     <!-- Felhasználók Kezelése -->
     <div class="section">
       <h2>Felhasználók Kezelése</h2>
-      <h3>Felhasználó Létrehozása</h3>
-      <input type="text" id="new-user-name" class="form-control mb-2" placeholder="Felhasználó neve">
-      <input type="text" id="new-user-code" class="form-control mb-2" placeholder="Felhasználó kódja">
-      <button class="btn btn-success w-100" onclick="createUser()">Létrehozás</button>
-      <h3 class="mt-4">Felhasználó Törlése</h3>
-      <select id="delete-user-select" class="form-select mb-3">
-        <option value="user1">Felhasználó 1</option>
-        <option value="user2">Felhasználó 2</option>
-      </select>
+      <div class="table-responsive">
+        <table class="table table-striped">
+          <thead>
+            <tr>
+              <th>Név</th>
+              <th>E-mail</th>
+              <th>Telefon</th>
+              <th>Szerepkör</th>
+            </tr>
+          </thead>
+          <tbody id="user-table-body"></tbody>
+        </table>
+      </div>
+
+      <div class="row g-2 align-items-end">
+        <div class="col-md-6">
+          <label for="role-user-select" class="form-label">Felhasználó kiválasztása</label>
+          <select id="role-user-select" class="form-select"></select>
+        </div>
+        <div class="col-md-6 d-flex gap-2">
+          <button class="btn btn-outline-success flex-fill" onclick="setUserRole(true)">Admin jogosultság</button>
+          <button class="btn btn-outline-secondary flex-fill" onclick="setUserRole(false)">Felhasználói jogosultság</button>
+        </div>
+      </div>
+
+      <h3 class="mt-4">Felhasználó törlése</h3>
+      <select id="delete-user-select" class="form-select mb-3"></select>
       <button class="btn btn-danger w-100" onclick="deleteUser()">Törlés</button>
     </div>
   </div>
 
   <script>
-    // Idő frissítése
+    const ordersContainer = document.getElementById('orders');
+    const userSelect = document.getElementById('user-select');
+    const messageSubjectInput = document.getElementById('message-subject');
+    const messageTextarea = document.getElementById('message');
+    const commandInput = document.getElementById('command');
+    const commandOutput = document.getElementById('command-output');
+    const userTableBody = document.getElementById('user-table-body');
+    const roleUserSelect = document.getElementById('role-user-select');
+    const deleteUserSelect = document.getElementById('delete-user-select');
+    const adminNameSpan = document.getElementById('admin-name');
+
+    let cachedUsers = [];
+    let cachedOrders = [];
+
     function updateTime() {
       const now = new Date();
       document.getElementById('current-time').textContent = now.toLocaleString();
     }
+
     setInterval(updateTime, 1000);
     updateTime();
 
-    // Rendelések kezelése
-    function acceptOrder() {
-      alert('Rendelés elfogadva!');
-    }
+    async function ensureAdmin() {
+      try {
+        const res = await fetch('/api/me', { credentials: 'include' });
+        if (!res.ok) {
+          window.location.href = 'login.html';
+          return null;
+        }
 
-    function rejectOrder() {
-      alert('Rendelés visszautasítva!');
-    }
+        const profile = await res.json();
+        if (Number(profile.FUNKCIO) !== 1) {
+          window.location.href = 'index.html';
+          return null;
+        }
 
-    // Üzenet küldése
-    function sendMessage() {
-      const user = document.getElementById('user-select').value;
-      const message = document.getElementById('message').value;
-      alert(`Üzenet elküldve: ${user} - ${message}`);
-    }
-
-    // Parancs futtatása
-    function executeCommand() {
-      const command = document.getElementById('command').value;
-      alert(`Parancs futtatva: ${command}`);
-    }
-
-    // Adatok exportálása
-    function exportData() {
-      alert('Adatok exportálva!');
-    }
-
-    // Felhasználók kezelése
-    function createUser() {
-      const name = document.getElementById('new-user-name').value;
-      const code = document.getElementById('new-user-code').value;
-      if (name && code) {
-        const userSelect = document.getElementById('delete-user-select');
-        const option = document.createElement('option');
-        option.value = name;
-        option.textContent = name;
-        userSelect.appendChild(option);
-        alert(`Felhasználó létrehozva: ${name} (${code})`);
-      } else {
-        alert('Kérjük, adja meg a nevet és a kódot!');
+        adminNameSpan.textContent = profile.NEV || profile.EMAIL || 'Admin';
+        return profile;
+      } catch (err) {
+        alert('Nem sikerült ellenőrizni a jogosultságot, kérlek jelentkezz be újra.');
+        window.location.href = 'login.html';
+        return null;
       }
     }
-    function deleteUser() {
-      const userSelect = document.getElementById('delete-user-select');
-      const selectedUser = userSelect.value;
-      if (selectedUser) {
-        userSelect.remove(userSelect.selectedIndex);
-        alert(`Felhasználó törölve: ${selectedUser}`);
-      } else {
-        alert('Nincs kiválasztott felhasználó!');
+
+    function renderOrders() {
+      ordersContainer.innerHTML = '';
+
+      if (!cachedOrders.length) {
+        const empty = document.createElement('div');
+        empty.className = 'alert alert-info mb-0';
+        empty.textContent = 'Jelenleg nincs megjeleníthető rendelés.';
+        ordersContainer.appendChild(empty);
+        return;
+      }
+
+      cachedOrders.forEach(order => {
+        const item = document.createElement('div');
+        item.className = 'list-group-item';
+
+        const header = document.createElement('div');
+        header.className = 'd-flex justify-content-between align-items-start';
+
+        const title = document.createElement('div');
+        title.innerHTML = `<strong>Rendelés #${order.ID_KOSAR}</strong><br><small>${order.UGYFEL_NEV || ''} (${order.UGYFEL_EMAIL || ''})</small>`;
+
+        const statusBadge = document.createElement('span');
+        statusBadge.className = `badge ${getStatusBadgeClass(order.STATUSZ)}`;
+        statusBadge.textContent = getStatusLabel(order.STATUSZ);
+
+        header.appendChild(title);
+        header.appendChild(statusBadge);
+
+        const body = document.createElement('div');
+        body.className = 'mt-2';
+        body.innerHTML = `
+          <div><strong>Dátum:</strong> ${order.DATUMIDO ? new Date(order.DATUMIDO).toLocaleString() : 'N/A'}</div>
+          <div><strong>Szállítás:</strong> ${order.SZALLMOD || 'Nincs megadva'}</div>
+          <div><strong>Fizetés:</strong> ${order.FIZMOD || 'Nincs megadva'}</div>
+          <div class="mt-2"><strong>Leírás:</strong><br>${order.LEIRAS || 'Nincs leírás'}</div>
+          ${order.MEGJEGYZES ? `<div class="mt-2 text-muted"><strong>Megjegyzés:</strong> ${order.MEGJEGYZES}</div>` : ''}
+        `;
+
+        const actions = document.createElement('div');
+        actions.className = 'mt-3 d-flex gap-2 flex-wrap';
+
+        const acceptBtn = document.createElement('button');
+        acceptBtn.className = 'btn btn-success btn-sm';
+        acceptBtn.textContent = 'Elfogadás';
+        acceptBtn.onclick = () => updateOrderStatus(order.ID_KOSAR, 'accepted');
+
+        const rejectBtn = document.createElement('button');
+        rejectBtn.className = 'btn btn-danger btn-sm';
+        rejectBtn.textContent = 'Elutasítás';
+        rejectBtn.onclick = () => updateOrderStatus(order.ID_KOSAR, 'rejected');
+
+        const resetBtn = document.createElement('button');
+        resetBtn.className = 'btn btn-outline-secondary btn-sm';
+        resetBtn.textContent = 'Vissza függőbe';
+        resetBtn.onclick = () => updateOrderStatus(order.ID_KOSAR, 'pending');
+
+        actions.appendChild(acceptBtn);
+        actions.appendChild(rejectBtn);
+        actions.appendChild(resetBtn);
+
+        item.appendChild(header);
+        item.appendChild(body);
+        item.appendChild(actions);
+
+        ordersContainer.appendChild(item);
+      });
+    }
+
+    function getStatusBadgeClass(status) {
+      switch (status) {
+        case 'accepted':
+          return 'bg-success';
+        case 'rejected':
+          return 'bg-danger';
+        default:
+          return 'bg-secondary';
       }
     }
+
+    function getStatusLabel(status) {
+      switch (status) {
+        case 'accepted':
+          return 'Elfogadva';
+        case 'rejected':
+          return 'Elutasítva';
+        default:
+          return 'Függőben';
+      }
+    }
+
+    async function loadOrders() {
+      try {
+        const res = await fetch('/api/admin/orders', { credentials: 'include' });
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.message || 'Hiba a rendelések betöltésekor.');
+        }
+        cachedOrders = data;
+        renderOrders();
+      } catch (err) {
+        ordersContainer.innerHTML = `<div class="alert alert-danger">${err.message}</div>`;
+      }
+    }
+
+    async function updateOrderStatus(orderId, status) {
+      const note = prompt('Megjegyzés (opcionális):', '');
+
+      try {
+        const res = await fetch(`/api/admin/orders/${orderId}/status`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ status, note: note ?? '' })
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.message || 'Hiba a státusz módosításakor.');
+        }
+
+        if (data.message) {
+          alert(data.message);
+        }
+
+        await loadOrders();
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    async function sendMessage() {
+      const userId = userSelect.value;
+      const message = messageTextarea.value.trim();
+      const subject = messageSubjectInput.value.trim();
+
+      if (!userId) {
+        alert('Válassz ki egy felhasználót.');
+        return;
+      }
+
+      if (!message) {
+        alert('Az üzenet nem lehet üres.');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/admin/messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ userId, subject, message })
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.message || 'Hiba az üzenet küldésekor.');
+        }
+
+        alert('Üzenet elküldve.');
+        messageTextarea.value = '';
+        messageSubjectInput.value = '';
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    async function executeCommand() {
+      const command = commandInput.value.trim();
+
+      if (!command) {
+        alert('Adj meg egy parancsot.');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/admin/commands', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ command })
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.message || 'Hiba a parancs futtatásakor.');
+        }
+
+        commandOutput.textContent = data.output || data.message || 'Nincs visszatérési érték.';
+      } catch (err) {
+        commandOutput.textContent = '';
+        alert(err.message);
+      }
+    }
+
+    async function exportData() {
+      try {
+        const res = await fetch('/api/admin/export/orders', { credentials: 'include' });
+
+        if (!res.ok) {
+          const data = await res.json();
+          throw new Error(data.message || 'Hiba az exportálás során.');
+        }
+
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'rendelesek.csv';
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    function renderUsers() {
+      userTableBody.innerHTML = '';
+      userSelect.innerHTML = '<option value="">Válassz felhasználót...</option>';
+      roleUserSelect.innerHTML = '<option value="">Válassz felhasználót...</option>';
+      deleteUserSelect.innerHTML = '<option value="">Válassz felhasználót...</option>';
+
+      cachedUsers.forEach(user => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${user.NEV || '-'}</td>
+          <td>${user.EMAIL || '-'}</td>
+          <td>${user.TELEFON || '-'}</td>
+          <td>
+            <span class="badge ${user.FUNKCIO === 1 ? 'bg-success' : 'bg-secondary'}">
+              ${user.FUNKCIO === 1 ? 'Admin' : 'Felhasználó'}
+            </span>
+          </td>
+        `;
+        userTableBody.appendChild(tr);
+
+        const email = user.EMAIL || 'nincs e-mail';
+        const optionLabel = `${user.NEV || email} (${email})`;
+
+        const optionMessage = document.createElement('option');
+        optionMessage.value = user.ID_USER;
+        optionMessage.textContent = optionLabel;
+        userSelect.appendChild(optionMessage);
+
+        const optionRole = optionMessage.cloneNode(true);
+        roleUserSelect.appendChild(optionRole);
+
+        const optionDelete = optionMessage.cloneNode(true);
+        deleteUserSelect.appendChild(optionDelete);
+      });
+    }
+
+    async function loadUsers() {
+      try {
+        const res = await fetch('/api/admin/users', { credentials: 'include' });
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.message || 'Hiba a felhasználók betöltésekor.');
+        }
+        cachedUsers = data;
+        renderUsers();
+      } catch (err) {
+        userTableBody.innerHTML = `<tr><td colspan="4" class="text-danger">${err.message}</td></tr>`;
+      }
+    }
+
+    async function setUserRole(isAdmin) {
+      const userId = roleUserSelect.value;
+
+      if (!userId) {
+        alert('Válassz ki egy felhasználót.');
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/admin/users/${userId}/role`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ isAdmin })
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.message || 'Hiba a jogosultság frissítésekor.');
+        }
+
+        await loadUsers();
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    async function deleteUser() {
+      const userId = deleteUserSelect.value;
+
+      if (!userId) {
+        alert('Válassz ki egy felhasználót.');
+        return;
+      }
+
+      if (!confirm('Biztosan törlöd a felhasználót? A művelet nem visszavonható.')) {
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/admin/users/${userId}`, {
+          method: 'DELETE',
+          credentials: 'include'
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.message || 'Hiba a felhasználó törlésekor.');
+        }
+
+        await loadUsers();
+        await loadOrders();
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    async function initAdminPage() {
+      const profile = await ensureAdmin();
+      if (!profile) {
+        return;
+      }
+
+      await Promise.all([loadOrders(), loadUsers()]);
+    }
+
+    initAdminPage();
+
+    window.sendMessage = sendMessage;
+    window.executeCommand = executeCommand;
+    window.exportData = exportData;
+    window.setUserRole = setUserRole;
+    window.deleteUser = deleteUser;
   </script>
 </body>
 </html>

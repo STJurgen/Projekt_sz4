@@ -93,8 +93,13 @@ exports.login = async (req, res) => {
 
     req.session.userId = user.ID_USER;
     req.session.email = user.EMAIL;
+    req.session.role = Number(user.FUNKCIO) === 1 ? 'admin' : 'user';
 
-    res.json({ message: 'Sikeres bejelentkezés!', userId: user.ID_USER });
+    res.json({
+      message: 'Sikeres bejelentkezés!',
+      userId: user.ID_USER,
+      isAdmin: req.session.role === 'admin'
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Hiba a bejelentkezés során.' });
@@ -123,7 +128,13 @@ exports.getProfile = async (req, res) => {
       return res.status(404).json({ message: "Felhasználó nem található!" });
     }
 
-    res.json(rows[0]);
+    const profile = rows[0];
+
+    if (!req.session.role) {
+      req.session.role = Number(profile.FUNKCIO) === 1 ? 'admin' : 'user';
+    }
+
+    res.json(profile);
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Hiba történt a profil lekérésekor." });

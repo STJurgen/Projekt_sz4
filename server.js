@@ -31,11 +31,13 @@ const authRoutes = require('./routes/auth');
 const telepulesRoutes = require('./routes/telepulesek');
 const categoriesRoutes = require('./routes/categories');
 const userRoutes = require('./routes/users');
+const adminRoutes = require('./routes/admin');
 
 app.use('/api', authRoutes);
 app.use('/api', telepulesRoutes);
-app.use('/api/categories', categoriesRoutes); 
+app.use('/api/categories', categoriesRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/admin', adminRoutes);
 
 
 // Start
