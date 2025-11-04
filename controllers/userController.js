@@ -35,17 +35,30 @@ function generateUniqueId() {
 }
 
 // --- ÁRAJÁNLAT KÜLDÉSE ---
+
 async function sendOffer(req, res) {
   try {
     const { taskId, userId, munkaora, munkadij, anyagdij, felvDatum, kiadDatum, categoryId, operatorId } = req.body;
 
     if (!categoryId) return res.status(400).json({ message: 'Kérlek válassz kategóriát!' });
-    if (munkaora <= 0 || munkadij <= 0 || anyagdij < 0) return res.status(400).json({ message: 'Hibás számadat, nem lehet nulla!' });
 
-    const netto = (Number(munkaora) * Number(munkadij)) + Number(anyagdij);
+    const munkaoraNum = Number(munkaora);
+    const munkadijNum = Number(munkadij);
+    const anyagdijNum = Number(anyagdij);
+
+    if (!Number.isFinite(munkaoraNum) || !Number.isFinite(munkadijNum) || !Number.isFinite(anyagdijNum)) {
+      return res.status(400).json({ message: 'Hibás számadat, kérlek ellenőrizd a mezőket!' });
+    }
+
+    if (munkaoraNum <= 0 || munkadijNum <= 0 || anyagdijNum < 0) {
+      return res.status(400).json({ message: 'Hibás számadat, nem lehet nulla!' });
+    }
+
+    const netto = munkaoraNum * munkadijNum + anyagdijNum;
     const afa = netto * VAT;
     const brutto = netto + afa;
 
+    const userEmail = await getUserEmail(userId);
     const uniqueId = generateUniqueId();
 
     const doc = new PDFDocument({ margin: 50 });
@@ -65,7 +78,7 @@ async function sendOffer(req, res) {
 
       await transporter.sendMail({
         from: '"PROCOMP" <info@procomp.hu>',
-        to: await getUserEmail(userId),
+        to: userEmail,
         subject: 'Árajánlat',
         html: `<p>Kedves Ügyfelünk!</p>
                <p>Csatolva találja az Ön részére készült <b>árajánlatot</b> (azonosító: <b>${uniqueId}</b>).</p>
@@ -79,12 +92,14 @@ async function sendOffer(req, res) {
         `INSERT INTO szerviz_kosar_tetelei 
           (ID_KOSAR, ID_KATEGORIA, ID_OPERATOR, NEV, AZONOSITO, FELV_DATUM, KIAD_DATUM, KONDI, MUNkADIJ, ANYAGDIJ, MUNKAORA, VEGOSSZEG, LEIRAS) 
          VALUES (?, ?, ?, ?, ?, NOW(), ?, 'sent', ?, ?, ?, ?, ?)`,
-        [taskId, categoryId, operatorId, 'Árajánlat', uniqueId, kiadDatum, munkadij, anyagdij, munkaora, brutto, '']
+        [taskId, categoryId, operatorId, 'Árajánlat', uniqueId, kiadDatum, munkadijNum, anyagdijNum, munkaoraNum, brutto, '']
       );
 
       // --- 20 perces automatikus elutasítás ---
       setTimeout(() => {
-        rejectTaskIfExpired(taskId);
+        rejectTaskIfExpired(taskId).catch(err => {
+          console.error('Hiba az automatikus elutasításkor:', err);
+        });
       }, 20 * 60 * 1000); // 20 perc
 
       res.json({ message: 'Árajánlat elküldve PDF-ben', netto, brutto, azonosito: uniqueId });
@@ -100,7 +115,7 @@ async function sendOffer(req, res) {
     doc
       .fontSize(12)
       .fillColor('#333')
-      .text(`Ügyfél: ${await getUserEmail(userId)}`)
+      .text(`Ügyfél: ${userEmail}`)
       .text(`Dátum: ${new Date().toLocaleDateString()}`)
       .text(`Azonosító: ${uniqueId}`)
       .moveDown(1);
@@ -112,9 +127,9 @@ async function sendOffer(req, res) {
 
     doc
       .fontSize(12)
-      .text(`Munkaóra: ${munkaora} óra`)
-      .text(`Óradíj: ${munkadij.toLocaleString()} Ft`)
-      .text(`Anyagdíj: ${anyagdij.toLocaleString()} Ft`)
+      .text(`Munkaóra: ${munkaoraNum} óra`)
+      .text(`Óradíj: ${munkadijNum.toLocaleString()} Ft`)
+      .text(`Anyagdíj: ${anyagdijNum.toLocaleString()} Ft`)
       .moveDown(0.5)
       .text(`Nettó összeg: ${netto.toLocaleString()} Ft`)
       .text(`ÁFA (27%): ${afa.toLocaleString()} Ft`)
@@ -129,34 +144,73 @@ async function sendOffer(req, res) {
 }
 
 // --- FELADAT AUTOMATIKUS ELUTASÍTÁSA 20 PERC UTÁN ---
-async function rejectTaskIfExpired(taskId) {
+async function rejectTaskIfExpired(taskId, { force = false } = {}) {
   try {
     const [rows] = await db.execute(
       `SELECT FELV_DATUM, KONDI FROM szerviz_kosar_tetelei WHERE ID_KOSAR=? ORDER BY ID_KOSARTETEL DESC LIMIT 1`,
       [taskId]
     );
-    if (!rows.length) return;
+    if (!rows.length) return false;
 
     const task = rows[0];
-    if (task.KONDI !== 'sent') return; // már elfogadva vagy lezárva
+    if (!force && task.KONDI !== 'sent') return false; // már elfogadva vagy lezárva
 
-    const sentTime = new Date(task.FELV_DATUM);
-    const now = new Date();
-    const minutesElapsed = (now - sentTime) / 1000 / 60;
+    if (!force) {
+      const sentTime = new Date(task.FELV_DATUM);
+      const now = new Date();
+      const minutesElapsed = (now - sentTime) / 1000 / 60;
 
-    if (minutesElapsed >= 20) {
-      await db.execute(
-        `UPDATE szerviz_kosar_tetelei SET KONDI='closed' WHERE ID_KOSAR=? AND KONDI='sent'`,
-        [taskId]
-      );
+      if (minutesElapsed < 20) {
+        return false;
+      }
+    }
+
+    const [result] = await db.execute(
+      `UPDATE szerviz_kosar_tetelei SET KONDI='closed' WHERE ID_KOSAR=? AND KONDI='sent'`,
+      [taskId]
+    );
+
+    if (!result.affectedRows) {
+      return false;
+    }
+
+    if (force) {
+      console.log(`Task ${taskId} manuálisan elutasítva.`);
+    } else {
       console.log(`Task ${taskId} automatikusan elutasítva 20 perc elteltével.`);
     }
+
+    return true;
   } catch (err) {
     console.error('Hiba az automatikus elutasításkor:', err);
+    return false;
   }
 }
 
 // --- ÁRAJÁNLAT ELFOGADÁSA ---
+
+
+async function rejectTask(req, res) {
+  const { taskId } = req.body;
+
+  if (!taskId) {
+    return res.status(400).json({ message: 'taskId szükséges' });
+  }
+
+  try {
+    const rejected = await rejectTaskIfExpired(taskId, { force: true });
+
+    if (!rejected) {
+      return res.status(404).json({ message: 'Feladat nem található vagy már nem törölhető' });
+    }
+
+    res.json({ message: 'Feladat elutasítva' });
+  } catch (err) {
+    console.error('Hiba a feladat elutasításakor:', err);
+    res.status(500).json({ message: 'Hiba a feladat elutasításakor' });
+  }
+}
+
 async function acceptOffer(req, res) {
   try {
     const { taskId } = req.params;
@@ -333,7 +387,7 @@ async function getUserEmail(userId) {
 module.exports = {
   getTasks,
   sendOffer,
-  rejectTask: rejectTaskIfExpired, // automatikus 20 perc után
+  rejectTask,
   acceptOffer,
   completeTask
 };
