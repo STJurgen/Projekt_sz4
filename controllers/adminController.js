@@ -6,6 +6,7 @@ const STATUS_TABLE_SQL = `
     ID_KOSAR INT PRIMARY KEY,
     STATUSZ ENUM('pending','accepted','rejected') NOT NULL DEFAULT 'pending',
     MEGJEGYZES TEXT,
+    UPDATED_AT DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     UPDATED_AT DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT fk_admin_order_status_kosar
       FOREIGN KEY (ID_KOSAR) REFERENCES szerviz_kosar(ID_KOSAR)
@@ -107,6 +108,19 @@ exports.sendMessage = async (req, res) => {
 exports.getUsers = async (req, res) => {
   try {
     const [rows] = await db.query(
+      `SELECT u.ID_USER,
+              u.NEV,
+              u.EMAIL,
+              u.TELEFON,
+              u.FUNKCIO,
+              CASE
+                WHEN COALESCE(op_email.ADMIN, op_login.ADMIN) = 'Y' THEN 1
+                ELSE 0
+              END AS IS_ADMIN
+       FROM userek u
+       LEFT JOIN operator op_email ON op_email.EMAIL = u.EMAIL
+       LEFT JOIN operator op_login ON op_login.LOGIN = u.LOGIN
+       ORDER BY u.NEV ASC`
       `SELECT ID_USER, NEV, EMAIL, TELEFON, FUNKCIO
        FROM userek
        ORDER BY NEV ASC`
@@ -124,6 +138,18 @@ exports.updateUserRole = async (req, res) => {
   const { isAdmin } = req.body;
 
   const funkcio = isAdmin ? 1 : 0;
+  const adminFlag = isAdmin ? 'Y' : 'N';
+
+  try {
+    const [[user]] = await db.query(
+      'SELECT EMAIL, LOGIN FROM userek WHERE ID_USER = ? LIMIT 1',
+      [userId]
+    );
+
+    if (!user) {
+      return res.status(404).json({ message: 'Felhasználó nem található.' });
+    }
+
 
   try {
     const [result] = await db.query(
@@ -131,6 +157,18 @@ exports.updateUserRole = async (req, res) => {
       [funkcio, userId]
     );
 
+    if (!result.affectedRows) {
+      return res.status(404).json({ message: 'Felhasználó nem található.' });
+    }
+
+    await db.query(
+      'UPDATE operator SET ADMIN = ? WHERE EMAIL = ? OR LOGIN = ?',
+      [adminFlag, user.EMAIL || null, user.LOGIN || null]
+    );
+
+    if (req.session.userId === Number(userId)) {
+      req.session.role = isAdmin ? 'admin' : 'user';
+      req.session.isAdmin = !!isAdmin;
     if (req.session.userId === Number(userId)) {
       req.session.role = funkcio === 1 ? 'admin' : 'user';
     }

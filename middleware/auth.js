@@ -17,6 +17,27 @@ module.exports.requireAdmin = async (req, res, next) => {
   }
 
   try {
+    let operatorRow;
+
+    if (req.session.email) {
+      const [[byEmail]] = await db.query(
+        'SELECT ADMIN FROM operator WHERE EMAIL = ? LIMIT 1',
+        [req.session.email]
+      );
+      operatorRow = byEmail;
+    }
+
+    if (!operatorRow && req.session.login) {
+      const [[byLogin]] = await db.query(
+        'SELECT ADMIN FROM operator WHERE LOGIN = ? LIMIT 1',
+        [req.session.login]
+      );
+      operatorRow = byLogin;
+    }
+
+    const isAdmin = operatorRow && operatorRow.ADMIN === 'Y';
+    req.session.role = isAdmin ? 'admin' : 'user';
+    req.session.isAdmin = isAdmin;
     const [[user]] = await db.query(
       'SELECT FUNKCIO FROM userek WHERE ID_USER = ? LIMIT 1',
       [req.session.userId]
