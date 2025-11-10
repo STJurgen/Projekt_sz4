@@ -242,6 +242,17 @@
       transform: translateY(-1px);
     }
 
+    .btn-success-modern {
+      background: #10b981;
+      color: white;
+      border-color: #10b981;
+    }
+
+    .btn-success-modern:hover {
+      background: #059669;
+      color: white;
+    }
+
     .modern-table {
       background: white;
       border-radius: 6px;
@@ -477,7 +488,7 @@
     }
 
     /* Modal stílusok */
-    .operator-modal {
+    .operator-modal, .config-modal, .export-modal {
       display: none;
       position: fixed;
       top: 0;
@@ -490,7 +501,7 @@
       justify-content: center;
     }
 
-    .operator-modal.active {
+    .operator-modal.active, .config-modal.active, .export-modal.active {
       display: flex;
     }
 
@@ -499,10 +510,16 @@
       border-radius: 12px;
       padding: 2rem;
       width: 90%;
-      max-width: 500px;
+      max-width: 600px;
       box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
       position: relative;
       animation: modalSlideIn 0.3s ease;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    .export-modal .modal-content {
+      max-width: 500px;
     }
 
     @keyframes modalSlideIn {
@@ -608,6 +625,70 @@
       margin-right: 0.5rem;
     }
 
+    .config-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+
+    @media (min-width: 768px) {
+      .config-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    .config-section {
+      background: var(--light-gray);
+      padding: 1rem;
+      border-radius: 8px;
+      border: 1px solid var(--border-gray);
+    }
+
+    .config-section-title {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      color: var(--dominant-gray);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .export-options {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .export-option {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem;
+      border: 1px solid var(--border-gray);
+      border-radius: 8px;
+      background: var(--light-gray);
+    }
+
+    .export-info {
+      flex: 1;
+    }
+
+    .export-title {
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+    }
+
+    .export-description {
+      font-size: 0.85rem;
+      color: var(--medium-gray);
+    }
+
+    .export-actions {
+      display: flex;
+      gap: 0.5rem;
+    }
+
     @media (max-width: 767px) {
       .admin-header {
         padding: 0.75rem 0;
@@ -661,6 +742,17 @@
       .modal-content {
         padding: 1.5rem;
         margin: 1rem;
+      }
+
+      .export-option {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+      }
+
+      .export-actions {
+        width: 100%;
+        justify-content: space-between;
       }
     }
 
@@ -784,6 +876,180 @@
     </div>
   </div>
 
+  <!-- Konfiguráció szerkesztő modal -->
+  <div class="config-modal" id="config-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">Rendszer Konfiguráció</h3>
+        <button class="close-modal" onclick="closeConfigModal()">
+          <i class="bi bi-x"></i>
+        </button>
+      </div>
+      
+      <form id="config-form">
+        <div class="config-grid">
+          <!-- ÁFA beállítások -->
+          <div class="config-section">
+            <h4 class="config-section-title">
+              <i class="bi bi-percent"></i>
+              ÁFA Beállítások
+            </h4>
+            <div class="form-group">
+              <label class="form-label" for="config-afa-kulcs">ÁFA kulcs (%):</label>
+              <input type="number" id="config-afa-kulcs" class="form-control-modern" min="0" max="100" step="0.1" required>
+            </div>
+          </div>
+
+          <!-- Munkaóra beállítások -->
+          <div class="config-section">
+            <h4 class="config-section-title">
+              <i class="bi bi-clock"></i>
+              Munkaóra Beállítások
+            </h4>
+            <div class="form-group">
+              <label class="form-label" for="config-munkaora-dij">Alap munkaóradíj (Ft/óra):</label>
+              <input type="number" id="config-munkaora-dij" class="form-control-modern" min="0" step="100" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="config-munkaora">Alap munkaóra szám:</label>
+              <input type="number" id="config-munkaora" class="form-control-modern" min="0" step="0.5" required>
+            </div>
+          </div>
+
+          <!-- Email sablonok -->
+          <div class="config-section" style="grid-column: 1 / -1;">
+            <h4 class="config-section-title">
+              <i class="bi bi-envelope"></i>
+              Email Sablonok
+            </h4>
+            <div class="form-group">
+              <label class="form-label" for="config-email-szerviz-kesz">Szerviz kész email sablon:</label>
+              <textarea id="config-email-szerviz-kesz" class="form-control-modern" rows="4" placeholder="Szerviz munkálatok befejezésekor küldendő email..."></textarea>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="config-email-uj-rendeles">Új rendelés email sablon:</label>
+              <textarea id="config-email-uj-rendeles" class="form-control-modern" rows="4" placeholder="Új rendelés felvételénél küldendő email..."></textarea>
+            </div>
+          </div>
+
+          <!-- Általános beállítások -->
+          <div class="config-section" style="grid-column: 1 / -1;">
+            <h4 class="config-section-title">
+              <i class="bi bi-gear"></i>
+              Általános Beállítások
+            </h4>
+            <div class="form-group">
+              <label class="form-label" for="config-ceg-nev">Cég neve:</label>
+              <input type="text" id="config-ceg-nev" class="form-control-modern" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="config-ceg-cim">Cég címe:</label>
+              <input type="text" id="config-ceg-cim" class="form-control-modern" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="config-ceg-adoszam">Adószám:</label>
+              <input type="text" id="config-ceg-adoszam" class="form-control-modern" required>
+            </div>
+          </div>
+        </div>
+        
+        <div class="modal-actions">
+          <button type="button" class="btn btn-outline-modern btn-modern" onclick="closeConfigModal()">
+            Mégse
+          </button>
+          <button type="submit" class="btn btn-primary-modern btn-modern">
+            <i class="bi bi-check"></i>
+            Beállítások Mentése
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Export modal -->
+  <div class="export-modal" id="export-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">Adatok Exportálása</h3>
+        <button class="close-modal" onclick="closeExportModal()">
+          <i class="bi bi-x"></i>
+        </button>
+      </div>
+      
+      <div class="export-options">
+        <!-- Számla adatok -->
+        <div class="export-option">
+          <div class="export-info">
+            <div class="export-title">Számla Adatok</div>
+            <div class="export-description">Teljes számlázási előzmények és adatok</div>
+          </div>
+          <div class="export-actions">
+            <button class="btn btn-success-modern btn-modern" onclick="exportInvoicingData('csv')">
+              <i class="bi bi-file-earmark-spreadsheet"></i> CSV
+            </button>
+            <button class="btn btn-primary-modern btn-modern" onclick="exportInvoicingData('xml')">
+              <i class="bi bi-file-code"></i> XML
+            </button>
+          </div>
+        </div>
+
+        <!-- Forgalmi adatok -->
+        <div class="export-option">
+          <div class="export-info">
+            <div class="export-title">Forgalmi Adatok</div>
+            <div class="export-description">Napi/havi/éves forgalom és statisztikák</div>
+          </div>
+          <div class="export-actions">
+            <button class="btn btn-success-modern btn-modern" onclick="exportSalesData('csv')">
+              <i class="bi bi-file-earmark-spreadsheet"></i> CSV
+            </button>
+            <button class="btn btn-primary-modern btn-modern" onclick="exportSalesData('xml')">
+              <i class="bi bi-file-code"></i> XML
+            </button>
+          </div>
+        </div>
+
+        <!-- Ügyfél adatok -->
+        <div class="export-option">
+          <div class="export-info">
+            <div class="export-title">Ügyfél Adatbázis</div>
+            <div class="export-description">Teljes ügyfél lista és kapcsolattartók</div>
+          </div>
+          <div class="export-actions">
+            <button class="btn btn-success-modern btn-modern" onclick="exportCustomerData('csv')">
+              <i class="bi bi-file-earmark-spreadsheet"></i> CSV
+            </button>
+            <button class="btn btn-primary-modern btn-modern" onclick="exportCustomerData('xml')">
+              <i class="bi bi-file-code"></i> XML
+            </button>
+          </div>
+        </div>
+
+        <!-- Szerviz előzmények -->
+        <div class="export-option">
+          <div class="export-info">
+            <div class="export-title">Szerviz Előzmények</div>
+            <div class="export-description">Minden szerviz munka és javítási előzmény</div>
+          </div>
+          <div class="export-actions">
+            <button class="btn btn-success-modern btn-modern" onclick="exportServiceHistory('csv')">
+              <i class="bi bi-file-earmark-spreadsheet"></i> CSV
+            </button>
+            <button class="btn btn-primary-modern btn-modern" onclick="exportServiceHistory('xml')">
+              <i class="bi bi-file-code"></i> XML
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <div class="modal-actions">
+        <button type="button" class="btn btn-outline-modern btn-modern" onclick="closeExportModal()">
+          Bezárás
+        </button>
+      </div>
+    </div>
+  </div>
+
   <header class="admin-header">
     <div class="container-fluid">
       <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center gap-2">
@@ -844,10 +1110,20 @@
 
     <div class="content-grid">
       <div class="left-content">
-        <button class="btn operator-add-btn btn-modern w-100" onclick="addOperator()">
-          <i class="bi bi-person-plus-fill"></i>
-          Operátor felvétele
-        </button>
+        <div class="d-flex flex-column flex-sm-row gap-2 mb-3">
+          <button class="btn operator-add-btn btn-modern flex-fill" onclick="addOperator()">
+            <i class="bi bi-person-plus-fill"></i>
+            Operátor felvétele
+          </button>
+          <button class="btn btn-success-modern btn-modern flex-fill" onclick="openConfigModal()">
+            <i class="bi bi-gear-fill"></i>
+            Konfiguráció
+          </button>
+          <button class="btn btn-primary-modern btn-modern flex-fill" onclick="openExportModal()">
+            <i class="bi bi-download"></i>
+            Adat Export
+          </button>
+        </div>
 
         <div class="section">
           <div class="section-header">
@@ -1003,7 +1279,8 @@
   <script>
     // Globális változók
     let productRefreshInterval;
-    let currentUserIsAdmin = true; // Alapértelmezetten adminnak tekintjük
+    let currentUserIsAdmin = true;
+    let configData = {};
 
     // Idő frissítése
     function updateTime() {
@@ -1031,6 +1308,7 @@
 
     // Oldal betöltésekor automatikus adatfeltöltés
     document.addEventListener('DOMContentLoaded', function() {
+      loadConfigData();
       refreshAllData();
       startProductRefreshTimer();
       
@@ -1039,11 +1317,308 @@
         e.preventDefault();
         saveOperator();
       });
+
+      // Konfig form submit esemény
+      document.getElementById('config-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        saveConfigData();
+      });
     });
+
+    // Konfigurációs adatok betöltése
+    async function loadConfigData() {
+      try {
+        const sql = "SELECT FIELD, VALUE, DESCRIPTOR FROM config";
+        const result = await executeSqlQuery(sql);
+        
+        configData = {};
+        result.rows.forEach(row => {
+          configData[row.FIELD] = {
+            value: row.VALUE,
+            descriptor: row.DESCRIPTOR
+          };
+        });
+
+        // Alapértelmezett értékek, ha nincs konfiguráció
+        const defaults = {
+          'AFA_KULCS': '27',
+          'MUNKAORA_DIJ': '5000',
+          'MUNKAORA': '1',
+          'CEG_NEV': 'ITBOLT Szerviz Kft.',
+          'CEG_CIM': '1234 Budapest, Példa utca 1.',
+          'CEG_ADOSZAM': '12345678-1-42',
+          'EMAIL_SZERVIZ_KESZ': 'Tisztelt Ügyfelünk!\n\nA szerviz munkálatai befejeződtek. Terméke most már átvehető.\n\nÜdvözlettel,\nITBOLT Szerviz Csapat',
+          'EMAIL_UJ_RENDELES': 'Tisztelt Ügyfelünk!\n\nKöszönjük rendelését. Szerviz munkálatainkat hamarosan elkezdjük.\n\nÜdvözlettel,\nITBOLT Szerviz Csapat'
+        };
+
+        // Konfigurációs űrlap kitöltése
+        Object.keys(defaults).forEach(key => {
+          const value = configData[key] ? configData[key].value : defaults[key];
+          const element = document.getElementById(`config-${key.toLowerCase().replace(/_/g, '-')}`);
+          if (element) {
+            element.value = value;
+          }
+        });
+
+        console.log('✅ Konfigurációs adatok betöltve');
+      } catch (error) {
+        console.error('❌ Konfigurációs adatok betöltési hiba:', error);
+      }
+    }
+
+    // Konfigurációs adatok mentése
+    async function saveConfigData() {
+      const configFields = [
+        'afa-kulcs', 'munkaora-dij', 'munkaora', 'ceg-nev', 'ceg-cim', 'ceg-adoszam',
+        'email-szerviz-kesz', 'email-uj-rendeles'
+      ];
+
+      try {
+        for (const fieldId of configFields) {
+          const element = document.getElementById(`config-${fieldId}`);
+          const fieldName = fieldId.replace(/-/g, '_').toUpperCase();
+          const value = element.value;
+          
+          let sql;
+          if (configData[fieldName]) {
+            sql = `UPDATE config SET VALUE = '${value}', DESCRIPTOR = '${value}' WHERE FIELD = '${fieldName}'`;
+          } else {
+            sql = `INSERT INTO config (FIELD, VALUE, DESCRIPTOR) VALUES ('${fieldName}', '${value}', '${value}')`;
+          }
+          
+          await executeSqlQuery(sql);
+        }
+
+        alert('✅ Konfigurációs beállítások sikeresen mentve!');
+        closeConfigModal();
+        loadConfigData(); // Újratöltjük a konfigurációt
+      } catch (error) {
+        alert('❌ Hiba a konfiguráció mentése során: ' + error);
+      }
+    }
+
+    // Modal kezelő függvények
+    function openConfigModal() {
+      document.getElementById('config-modal').classList.add('active');
+    }
+
+    function closeConfigModal() {
+      document.getElementById('config-modal').classList.remove('active');
+    }
+
+    function openExportModal() {
+      document.getElementById('export-modal').classList.add('active');
+    }
+
+    function closeExportModal() {
+      document.getElementById('export-modal').classList.remove('active');
+    }
+
+    // Export függvények
+    async function exportInvoicingData(format) {
+      try {
+        const sql = `
+          SELECT 
+            sk.ID_KOSAR,
+            u.NEV as ugyfel_nev,
+            u.EMAIL,
+            u.TELEFON,
+            u.CEGNEV,
+            u.ADOSZAM,
+            skt.NEV as termek_nev,
+            skt.MUNJADIJ,
+            skt.ANYAGDIJ,
+            skt.MUNKAORA,
+            skt.FELV_DATUM,
+            skt.KIAD_DATUM,
+            skt.KONDI,
+            o.NEV as operator_nev
+          FROM szerviz_kosar_tetelei skt
+          JOIN szerviz_kosar sk ON skt.ID_KOSAR = sk.ID_KOSAR
+          JOIN userek u ON sk.ID_USER = u.ID_USER
+          LEFT JOIN operator o ON skt.ID_OPERATOR = o.ID_OPERATOR
+          ORDER BY skt.FELV_DATUM DESC
+        `;
+        
+        const result = await executeSqlQuery(sql);
+        const data = result.rows;
+        
+        if (format === 'csv') {
+          const csv = convertToCSV(data);
+          downloadFile(csv, `szamla_adatok_${getCurrentDate()}.csv`, 'text/csv');
+        } else {
+          const xml = convertToXML(data, 'SzamlaAdatok');
+          downloadFile(xml, `szamla_adatok_${getCurrentDate()}.xml`, 'application/xml');
+        }
+        
+        alert(`✅ Számla adatok exportálva ${format.toUpperCase()} formátumban!`);
+      } catch (error) {
+        alert('❌ Hiba az exportálás során: ' + error);
+      }
+    }
+
+    async function exportSalesData(format) {
+      try {
+        const sql = `
+          SELECT 
+            DATE(skt.FELV_DATUM) as datum,
+            COUNT(*) as darabszam,
+            SUM(skt.MUNJADIJ + skt.ANYAGDIJ) as osszeg,
+            AVG(skt.MUNJADIJ + skt.ANYAGDIJ) as atlag_ar
+          FROM szerviz_kosar_tetelei skt
+          WHERE skt.KONDI = 'closed'
+          GROUP BY DATE(skt.FELV_DATUM)
+          ORDER BY datum DESC
+        `;
+        
+        const result = await executeSqlQuery(sql);
+        const data = result.rows;
+        
+        if (format === 'csv') {
+          const csv = convertToCSV(data);
+          downloadFile(csv, `forgalmi_adatok_${getCurrentDate()}.csv`, 'text/csv');
+        } else {
+          const xml = convertToXML(data, 'ForgalmiAdatok');
+          downloadFile(xml, `forgalmi_adatok_${getCurrentDate()}.xml`, 'application/xml');
+        }
+        
+        alert(`✅ Forgalmi adatok exportálva ${format.toUpperCase()} formátumban!`);
+      } catch (error) {
+        alert('❌ Hiba az exportálás során: ' + error);
+      }
+    }
+
+    async function exportCustomerData(format) {
+      try {
+        const sql = `
+          SELECT 
+            u.ID_USER,
+            u.NEV,
+            u.EMAIL,
+            u.TELEFON,
+            u.CEGNEV,
+            u.ADOSZAM,
+            u.IRSZ,
+            u.TELEP,
+            u.UTCA,
+            COUNT(sk.ID_KOSAR) as rendelesek_szama,
+            MAX(skt.FELV_DATUM) as utolso_rendeles
+          FROM userek u
+          LEFT JOIN szerviz_kosar sk ON u.ID_USER = sk.ID_USER
+          LEFT JOIN szerviz_kosar_tetelei skt ON sk.ID_KOSAR = skt.ID_KOSAR
+          GROUP BY u.ID_USER, u.NEV, u.EMAIL, u.TELEFON, u.CEGNEV, u.ADOSZAM, u.IRSZ, u.TELEP, u.UTCA
+          ORDER BY u.NEV
+        `;
+        
+        const result = await executeSqlQuery(sql);
+        const data = result.rows;
+        
+        if (format === 'csv') {
+          const csv = convertToCSV(data);
+          downloadFile(csv, `ugyfel_adatok_${getCurrentDate()}.csv`, 'text/csv');
+        } else {
+          const xml = convertToXML(data, 'UgyfelAdatok');
+          downloadFile(xml, `ugyfel_adatok_${getCurrentDate()}.xml`, 'application/xml');
+        }
+        
+        alert(`✅ Ügyfél adatok exportálva ${format.toUpperCase()} formátumban!`);
+      } catch (error) {
+        alert('❌ Hiba az exportálás során: ' + error);
+      }
+    }
+
+    async function exportServiceHistory(format) {
+      try {
+        const sql = `
+          SELECT 
+            skt.ID_KOSARTETEL,
+            u.NEV as ugyfel_nev,
+            skt.NEV as termek_nev,
+            skt.AZONOSITO,
+            skt.LEIRAS,
+            skt.KONDI,
+            skt.FELV_DATUM,
+            skt.KIAD_DATUM,
+            skt.MUNJADIJ,
+            skt.ANYAGDIJ,
+            skt.MUNKAORA,
+            o.NEV as operator_nev
+          FROM szerviz_kosar_tetelei skt
+          JOIN szerviz_kosar sk ON skt.ID_KOSAR = sk.ID_KOSAR
+          JOIN userek u ON sk.ID_USER = u.ID_USER
+          LEFT JOIN operator o ON skt.ID_OPERATOR = o.ID_OPERATOR
+          ORDER BY skt.FELV_DATUM DESC
+        `;
+        
+        const result = await executeSqlQuery(sql);
+        const data = result.rows;
+        
+        if (format === 'csv') {
+          const csv = convertToCSV(data);
+          downloadFile(csv, `szerviz_elozmenyek_${getCurrentDate()}.csv`, 'text/csv');
+        } else {
+          const xml = convertToXML(data, 'SzervizElőzmények');
+          downloadFile(xml, `szerviz_elozmenyek_${getCurrentDate()}.xml`, 'application/xml');
+        }
+        
+        alert(`✅ Szerviz előzmények exportálva ${format.toUpperCase()} formátumban!`);
+      } catch (error) {
+        alert('❌ Hiba az exportálás során: ' + error);
+      }
+    }
+
+    // XML konverzió
+    function convertToXML(objArray, rootElement) {
+      let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
+      xml += `<${rootElement}>\n`;
+      
+      objArray.forEach(item => {
+        xml += '  <record>\n';
+        Object.keys(item).forEach(key => {
+          const value = item[key] === null ? '' : item[key];
+          xml += `    <${key}>${escapeXML(value)}</${key}>\n`;
+        });
+        xml += '  </record>\n';
+      });
+      
+      xml += `</${rootElement}>`;
+      return xml;
+    }
+
+    // XML escape
+    function escapeXML(unsafe) {
+      if (unsafe === null || unsafe === undefined) return '';
+      return unsafe.toString()
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&apos;");
+    }
+
+    // Általános file letöltés
+    function downloadFile(content, filename, mimeType) {
+      const blob = new Blob([content], { type: mimeType });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.setAttribute('hidden', '');
+      a.setAttribute('href', url);
+      a.setAttribute('download', filename);
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    }
+
+    // Dátum formázás
+    function getCurrentDate() {
+      return new Date().toISOString().split('T')[0];
+    }
+
+    // ... (a többi függvény változatlan marad, csak a fenti export függvények lettek hozzáadva)
 
     // Operátor felvétel funkció
     function addOperator() {
-      // Ellenőrizzük, hogy admin-e a felhasználó
       if (!currentUserIsAdmin) {
         alert('❌ Csak admin felhasználók vehetnek fel új operátorokat!');
         return;
@@ -1078,25 +1653,20 @@
       }
     }
 
-    // Operátor szerkesztő modal megnyitása - JAVÍTOTT: email kezelés
+    // Operátor szerkesztő modal megnyitása
     function editOperator(operatorId, login, name, email, admin) {
-      console.log('Operátor adatok:', { operatorId, login, name, email, admin });
-      
       document.getElementById('edit-operator-id').value = operatorId;
       document.getElementById('edit-login').value = login || '';
       document.getElementById('edit-name').value = name || '';
       
-      // EMAIL JAVÍTÁS: Ellenőrizzük, hogy van-e email érték
       const emailValue = (email && email !== 'undefined' && email !== 'null') ? email : '';
       document.getElementById('edit-email').value = emailValue;
       
       document.getElementById('edit-password').value = '';
       
-      // Admin checkbox kezelése
       const adminCheckbox = document.getElementById('edit-admin');
       adminCheckbox.checked = admin === 'Y';
       
-      // Ha a felhasználó nem admin, letiltjuk az admin checkbox-ot
       if (!currentUserIsAdmin) {
         adminCheckbox.disabled = true;
         document.getElementById('admin-warning').style.display = 'block';
@@ -1133,7 +1703,6 @@
         return;
       }
 
-      // Email validáció
       if (!isValidEmail(email)) {
         alert('Kérjük, adjon meg egy érvényes email címet!');
         return;
@@ -1151,7 +1720,6 @@
           alert('✅ Operátor adatai sikeresen frissítve!');
           closeOperatorModal();
           refreshAllData();
-          // SQL parancs újrafuttatása a frissített adatok megjelenítéséhez
           executeCommand();
         })
         .catch(error => {
@@ -1167,7 +1735,6 @@
 
     // Operátor törlése
     function deleteOperator() {
-      // Ellenőrizzük, hogy admin-e a felhasználó
       if (!currentUserIsAdmin) {
         alert('❌ Csak admin felhasználók törölhetnek operátorokat!');
         return;
@@ -1187,7 +1754,6 @@
           alert('✅ Operátor sikeresen törölve!');
           closeOperatorModal();
           refreshAllData();
-          // SQL parancs újrafuttatása a frissített adatok megjelenítéséhez
           executeCommand();
         })
         .catch(error => {
@@ -1491,7 +2057,7 @@
       }
     }
 
-    // SQL parancs futtatása - MÓDOSÍTOTT: operátor szerkesztés gomb hozzáadása
+    // SQL parancs futtatása
     async function executeCommand() {
       const command = document.getElementById('command').value.trim();
 
@@ -1504,7 +2070,6 @@
         const result = await executeSqlQuery(command);
         
         if (result.type === "select") {
-          // Speciális kezelés operátor tábla esetén - szerkesztés gomb hozzáadása
           if (command.toUpperCase().includes('OPERATOR') && result.rows.length > 0) {
             displayResultsWithEdit(result.rows);
           } else {
@@ -1522,7 +2087,7 @@
       }
     }
 
-    // Eredmények megjelenítése táblázatban - operátor szerkesztés gombokkal - JAVÍTOTT
+    // Eredmények megjelenítése táblázatban - operátor szerkesztés gombokkal
     function displayResultsWithEdit(rows) {
       const resultsDiv = document.getElementById('sql-results');
       const resultsTable = document.getElementById('results-table');
@@ -1548,7 +2113,6 @@
           if (value === null || value === undefined) value = '';
           if (typeof value === 'object') value = JSON.stringify(value);
           
-          // Speciális formázás ADMIN mezőnek
           if (header === 'ADMIN') {
             const badgeClass = value === 'Y' ? 'badge-admin-yes' : 'badge-admin-no';
             const badgeText = value === 'Y' ? 'Igen' : 'Nem';
@@ -1558,7 +2122,6 @@
           }
         });
         
-        // Szerkesztés gomb hozzáadása - JAVÍTOTT: email érték kezelése
         const emailValue = (row.EMAIL && row.EMAIL !== 'undefined' && row.EMAIL !== 'null') ? row.EMAIL : '';
         bodyHTML += `<td>
           <button class="edit-operator-btn" onclick="editOperator(${row.ID_OPERATOR}, '${escapeString(row.LOGIN)}', '${escapeString(row.NEV)}', '${escapeString(emailValue)}', '${row.ADMIN}')">
@@ -1628,7 +2191,7 @@
       try {
         const result = await executeSqlQuery(sql);
         const csv = convertToCSV(result.rows);
-        downloadCSV(csv, `${tableName}_export_${new Date().toISOString().split('T')[0]}.csv`);
+        downloadCSV(csv, `${tableName}_export_${getCurrentDate()}.csv`);
         alert(`✅ ${tableName} tábla exportálva! ${result.rows.length} sor.`);
       } catch (error) {
         alert('❌ Export hiba: ' + error);
