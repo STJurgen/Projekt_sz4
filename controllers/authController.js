@@ -135,7 +135,7 @@ exports.login = async (req, res) => {
 // 4️⃣ Profil lekérése (userek + operator kezeléssel)
 exports.getProfile = async (req, res) => {
   if (!req.session.userId) {
-    return res.status(401).json({ message: "Nincs bejelentkezve!" });
+    return res.status(401).json({ message: "Nincs bejelentkezve!" }); //szia
   }
 
   try {
